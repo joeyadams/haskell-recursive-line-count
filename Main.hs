@@ -1,7 +1,11 @@
 {-# LANGUAGE RecordWildCards #-}
-import Control.Monad    (forM_)
+{-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
+import Control.Monad    (forM_, when)
 import CountLines
 import Graphics.UI.Gtk
+
+editFile :: FilePath -> IO ()
+editFile path = print path
 
 main :: IO ()
 main = do
@@ -14,11 +18,11 @@ main = do
     -- The following is based on TreeDemo.hs in the
     -- Gtk2Hs source distribution.
 
-    _ <- initGUI
+    initGUI
 
     win <- windowNew
     windowSetDefaultSize win 500 500
-    _ <- onDestroy win mainQuit
+    onDestroy win mainQuit
 
     model <- treeStoreNew forest
     view  <- treeViewNewWithModel model
@@ -46,8 +50,13 @@ main = do
     cellLayoutSetAttributes colNumberOfLines rendererNumberOfLines model $ \Entry{..} ->
         [ cellText := show entryLineCount ]
 
-    _ <- treeViewAppendColumn view colFileName
-    _ <- treeViewAppendColumn view colNumberOfLines
+    treeViewAppendColumn view colFileName
+    treeViewAppendColumn view colNumberOfLines
+
+    on view rowActivated $ \path _ -> do
+        Entry{..} <- treeStoreGetValue model path
+        when (entryType == File) $
+            editFile entryPath
 
     scroll <- scrolledWindowNew Nothing Nothing
     scrolledWindowSetPolicy scroll PolicyAutomatic PolicyAutomatic

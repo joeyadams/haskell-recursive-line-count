@@ -21,6 +21,7 @@ data Entry
     = Entry
         { entryType         :: EntryType
         , entryName         :: String
+        , entryPath         :: FilePath
         , entryLineCount    :: !Int
         }
 
@@ -35,7 +36,7 @@ instance Show Entry where
         . showsPrec 11 entryLineCount
 
 data EntryType = File | Directory
-    deriving Show
+    deriving (Eq, Show)
 
 logError :: String -> IO ()
 logError = hPutStrLn stderr
@@ -65,7 +66,7 @@ getFullPath path = fmap (\f -> joinPath $ f path) ask
 countLinesFile :: FileName -> CountLinesM (Maybe Entry)
 countLinesFile name = do
     full_path <- getFullPath [name]
-    liftIO $ (fmap (Just . Entry File name) $
+    liftIO $ (fmap (Just . Entry File name full_path) $
               readFile full_path >>= evaluate . length . lines)
            `catch` \e -> do
                 logIOError e
@@ -89,4 +90,5 @@ countLinesTree filename [[]]    = fmap (fmap (\entry -> Node entry []))
 countLinesTree dirname children = do
     (child_nodes, total) <- local (. (dirname :))
                           $ countLinesForest children
-    return $ Just $ Node (Entry Directory dirname total) child_nodes
+    dirpath <- getFullPath [dirname]
+    return $ Just $ Node (Entry Directory dirname dirpath total) child_nodes
