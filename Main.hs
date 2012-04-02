@@ -2,9 +2,15 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 import Control.Monad        (forM_)
 import CountLines
+import Data.List            (sortBy)
+import Data.Function        (on)
+import Data.Tree
 import Graphics.UI.Gtk
+    hiding (on)
 import System.IO            (hClose)
 import System.Process
+
+import qualified Graphics.UI.Gtk as Gtk
 
 editFile :: FilePath -> IO ()
 editFile path = do
@@ -15,6 +21,12 @@ editFile path = do
             , std_err = CreatePipe
             }
     mapM_ hClose [stdin, stdout, stderr]
+
+sortTree :: (a -> a -> Ordering) -> Tree a -> Tree a
+sortTree cmp (Node root forest) = Node root (sortForest cmp forest)
+
+sortForest :: (a -> a -> Ordering) -> Forest a -> Forest a
+sortForest cmp xs = map (sortTree cmp) $ sortBy (cmp `on` rootLabel) xs
 
 main :: IO ()
 main = do
@@ -40,7 +52,7 @@ main = do
     boxPackStart vbox label PackNatural 5
     containerAdd win vbox
 
-    model <- treeStoreNew forest
+    model <- treeStoreNew $ sortForest (flip compare `on` entryLineCount) forest
     view  <- treeViewNewWithModel model
 
     treeViewSetHeadersVisible view True
@@ -69,7 +81,7 @@ main = do
     treeViewAppendColumn view colFileName
     treeViewAppendColumn view colNumberOfLines
 
-    on view rowActivated $ \path _ -> do
+    Gtk.on view rowActivated $ \path _ -> do
         Entry{..} <- treeStoreGetValue model path
         if entryType == File
             then editFile entryPath
