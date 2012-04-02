@@ -1,6 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
-import Control.Monad        (forM_, when)
+import Control.Monad        (forM_)
 import CountLines
 import Graphics.UI.Gtk
 import System.IO            (hClose)
@@ -64,8 +64,14 @@ main = do
 
     on view rowActivated $ \path _ -> do
         Entry{..} <- treeStoreGetValue model path
-        when (entryType == File) $
-            editFile entryPath
+        if entryType == File
+            then editFile entryPath
+            else do
+                e <- treeViewRowExpanded view path
+                _ <- if e
+                    then treeViewCollapseRow view path
+                    else treeViewExpandRow view path False
+                return ()
 
     scroll <- scrolledWindowNew Nothing Nothing
     scrolledWindowSetPolicy scroll PolicyAutomatic PolicyAutomatic
