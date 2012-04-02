@@ -11,18 +11,21 @@ import Prelude hiding (catch)
 import Control.Arrow        ((>>>))
 import Control.Exception
 import Control.Monad.Reader
+import Data.Int             (Int64)
 import Data.Maybe           (catMaybes)
 import Data.Tree
 import GHC.Exts             (groupWith)
 import System.FilePath
 import System.IO
 
+import qualified Data.ByteString.Lazy as L
+
 data Entry
     = Entry
         { entryType         :: EntryType
         , entryName         :: String
         , entryPath         :: FilePath
-        , entryLineCount    :: !Int
+        , entryLineCount    :: !Int64
         }
 
 instance Show Entry where
@@ -53,7 +56,7 @@ type FileName = FilePath
 --   thus indicating the current directory of our traversal.
 type CountLinesM = ReaderT (Path -> Path) IO
 
-countLines :: [FilePath] -> IO (Forest Entry, Int)
+countLines :: [FilePath] -> IO (Forest Entry, Int64)
 countLines = map splitDirectories
          >>> filter (not . null)
          >>> countLinesForest
@@ -67,13 +70,13 @@ countLinesFile :: FileName -> CountLinesM (Maybe Entry)
 countLinesFile name = do
     full_path <- getFullPath [name]
     liftIO $ (fmap (Just . Entry File name full_path) $
-              readFile full_path >>= evaluate . length . lines)
+              L.readFile full_path >>= evaluate . L.count 10)
            `catch` \e -> do
                 logIOError e
                 return Nothing
 
 -- | None of the paths given may be empty.
-countLinesForest :: [Path] -> CountLinesM (Forest Entry, Int)
+countLinesForest :: [Path] -> CountLinesM (Forest Entry, Int64)
 countLinesForest paths = do
     forest <- fmap catMaybes $
               forM (groupWith head paths) $ \g ->
