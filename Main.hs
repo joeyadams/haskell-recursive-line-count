@@ -33,6 +33,13 @@ main = do
     windowSetDefaultSize win 500 500
     onDestroy win mainQuit
 
+    vbox <- vBoxNew False 0
+    label <- labelNew $ Just $ "Total line count: " ++ show total
+    miscSetAlignment label 0.0 0.5
+    miscSetPadding label 5 0
+    boxPackStart vbox label PackNatural 5
+    containerAdd win vbox
+
     model <- treeStoreNew forest
     view  <- treeViewNewWithModel model
 
@@ -46,7 +53,7 @@ main = do
         treeViewColumnSetExpand     col True
 
     treeViewColumnSetTitle colFileName      "Name"
-    treeViewColumnSetTitle colNumberOfLines "# Lines"
+    treeViewColumnSetTitle colNumberOfLines "Line count"
 
     rendererFileName      <- cellRendererTextNew
     rendererNumberOfLines <- cellRendererTextNew
@@ -77,7 +84,7 @@ main = do
     scrolledWindowSetPolicy scroll PolicyAutomatic PolicyAutomatic
 
     containerAdd scroll view
-    containerAdd win scroll
+    containerAdd vbox scroll
 
     widgetShowAll win
     mainGUI
