@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
+import Control.Monad    (forM_)
 import CountLines
 import Graphics.UI.Gtk
 
@@ -16,6 +17,7 @@ main = do
     _ <- initGUI
 
     win <- windowNew
+    windowSetDefaultSize win 500 500
     _ <- onDestroy win mainQuit
 
     model <- treeStoreNew forest
@@ -25,6 +27,10 @@ main = do
 
     colFileName      <- treeViewColumnNew
     colNumberOfLines <- treeViewColumnNew
+
+    forM_ [colFileName, colNumberOfLines] $ \col -> do
+        treeViewColumnSetResizable  col True
+        treeViewColumnSetExpand     col True
 
     treeViewColumnSetTitle colFileName      "Name"
     treeViewColumnSetTitle colNumberOfLines "# Lines"
@@ -43,7 +49,11 @@ main = do
     _ <- treeViewAppendColumn view colFileName
     _ <- treeViewAppendColumn view colNumberOfLines
 
-    containerAdd win view
+    scroll <- scrolledWindowNew Nothing Nothing
+    scrolledWindowSetPolicy scroll PolicyAutomatic PolicyAutomatic
+
+    containerAdd scroll view
+    containerAdd win scroll
 
     widgetShowAll win
     mainGUI
