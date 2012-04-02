@@ -1,11 +1,20 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
-import Control.Monad    (forM_, when)
+import Control.Monad        (forM_, when)
 import CountLines
 import Graphics.UI.Gtk
+import System.IO            (hClose)
+import System.Process
 
 editFile :: FilePath -> IO ()
-editFile path = print path
+editFile path = do
+    (Just stdin, Just stdout, Just stderr, _) <-
+        createProcess (proc "gvim" [path])
+            { std_in  = CreatePipe
+            , std_out = CreatePipe
+            , std_err = CreatePipe
+            }
+    mapM_ hClose [stdin, stdout, stderr]
 
 main :: IO ()
 main = do
