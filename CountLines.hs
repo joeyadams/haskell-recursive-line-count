@@ -8,17 +8,19 @@ module CountLines (
 
 import Prelude hiding (catch)
 
-import Control.Arrow        ((>>>))
+import Control.Arrow            ((>>>))
 import Control.Exception
 import Control.Monad.Reader
-import Data.Int             (Int64)
-import Data.Maybe           (catMaybes)
+import Data.Int                 (Int64)
+import Data.Maybe               (catMaybes)
 import Data.Tree
-import GHC.Exts             (groupWith)
+import GHC.Exts                 (groupWith)
 import System.FilePath
 import System.IO
 
-import qualified Data.ByteString.Lazy as L
+import qualified Data.ByteString               as S
+import qualified Data.ByteString.Lazy          as L
+import qualified Data.ByteString.Lazy.Internal as LI
 
 data Entry
     = Entry
@@ -65,12 +67,25 @@ countLines = map splitDirectories
 getFullPath :: Path -> CountLinesM FilePath
 getFullPath path = fmap (\f -> joinPath $ f path) ask
 
+countLinesLBS :: L.ByteString -> Int64
+countLinesLBS LI.Empty = 0
+countLinesLBS (LI.Chunk x0 lbs0) =
+    loop 0 x0 lbs0
+  where
+    loop !n x lbs = case lbs of
+        LI.Empty ->
+            n + fromIntegral (S.count lf x + fromEnum (S.last x /= lf))
+        LI.Chunk x' xs ->
+            loop (n + fromIntegral (S.count lf x)) x' xs
+
+    lf = 10
+
 -- | Count lines in a single file.
 countLinesFile :: FileName -> CountLinesM (Maybe Entry)
 countLinesFile name = do
     full_path <- getFullPath [name]
     liftIO $ (fmap (Just . Entry File name full_path) $
-              L.readFile full_path >>= evaluate . L.count 10)
+              L.readFile full_path >>= evaluate . countLinesLBS)
            `catch` \e -> do
                 logIOError e
                 return Nothing
