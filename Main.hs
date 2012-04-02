@@ -15,7 +15,7 @@ import qualified Graphics.UI.Gtk as Gtk
 editFile :: FilePath -> IO ()
 editFile path = do
     (Just stdin, Just stdout, Just stderr, _) <-
-        createProcess (proc "gvim" [path])
+        createProcess (proc "xdg-open" [path])
             { std_in  = CreatePipe
             , std_out = CreatePipe
             , std_err = CreatePipe
