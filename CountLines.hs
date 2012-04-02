@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE RecordWildCards #-}
 module CountLines (
     countLines,
     Entry(..),
@@ -16,14 +17,25 @@ import GHC.Exts             (groupWith)
 import System.FilePath
 import System.IO
 
-data Entry = Entry EntryType FilePath !Int
-    deriving Show
+data Entry
+    = Entry
+        { entryType         :: EntryType
+        , entryName         :: String
+        , entryLineCount    :: !Int
+        }
+
+instance Show Entry where
+    showsPrec d Entry{..}
+        = showParen (d > 10)
+        $ showString "Entry "
+        . showsPrec 11 entryType
+        . showString " "
+        . showsPrec 11 entryName
+        . showString " "
+        . showsPrec 11 entryLineCount
 
 data EntryType = File | Directory
     deriving Show
-
-entryLineCount :: Entry -> Int
-entryLineCount (Entry _ _ n) = n
 
 logError :: String -> IO ()
 logError = hPutStrLn stderr
