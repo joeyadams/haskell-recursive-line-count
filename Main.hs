@@ -28,6 +28,21 @@ sortTree cmp (Node root forest) = Node root (sortForest cmp forest)
 sortForest :: (a -> a -> Ordering) -> Forest a -> Forest a
 sortForest cmp xs = map (sortTree cmp) $ sortBy (cmp `on` rootLabel) xs
 
+data BottomRowHandlers
+    = BottomRowHandlers
+        { onRandomLine :: IO ()
+        }
+
+createBottomRow :: BottomRowHandlers -> IO Alignment
+createBottomRow BottomRowHandlers{..} = do
+    randomLineButton <- buttonNewWithLabel "Jump to random line"
+    onClicked randomLineButton onRandomLine
+
+    align <- alignmentNew 0.5 0.0 0.0 0.0
+    containerAdd align randomLineButton
+
+    return align
+
 main :: IO ()
 main = do
     (forest, total) <- fmap lines getContents >>= countLines
@@ -96,7 +111,20 @@ main = do
     scrolledWindowSetPolicy scroll PolicyAutomatic PolicyAutomatic
 
     containerAdd scroll view
-    containerAdd vbox scroll
+    boxPackStart vbox scroll PackGrow 0
+
+    bottomRow <- createBottomRow BottomRowHandlers
+        { onRandomLine = do
+            dialog <- messageDialogNew (Just win)
+                                       [DialogDestroyWithParent]
+                                       MessageError
+                                       ButtonsOk
+                                       "Not implemented yet"
+            _ <- dialogRun dialog
+            widgetDestroy dialog
+            return ()
+        }
+    boxPackStart vbox bottomRow PackNatural 0
 
     widgetShowAll win
     mainGUI
