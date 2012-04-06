@@ -1,3 +1,4 @@
+{-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 import Control.Monad        (forM_)
@@ -7,7 +8,7 @@ import Data.List            (sortBy)
 import Data.Function        (on)
 import Data.Tree
 import Graphics.UI.Gtk
-    hiding (on)
+    hiding (on, Entry)
 import System.IO            (hClose)
 import System.Process
 
@@ -32,6 +33,23 @@ sortTree cmp (Node root forest) = Node root (sortForest cmp forest)
 sortForest :: (a -> a -> Ordering) -> Forest a -> Forest a
 sortForest cmp xs = map (sortTree cmp) $ sortBy (cmp `on` rootLabel) xs
 
+-- | Locate the given (one-based) line number among all of the lines in the
+-- file tree.  Since this function is used to pick a random line, the sort
+-- order of the Forest is inconsequential.
+findLineNumber :: Int64 -> Forest Entry -> Maybe (FilePath, Int64)
+findLineNumber n forest
+    | n < 1     = Nothing
+    | otherwise =
+        case forest of
+            []     -> Nothing
+            (x:xs)  | xn <- (entryLineCount . rootLabel) x
+                    , n > xn
+                   -> findLineNumber (n - xn) xs
+                    | (entryType . rootLabel) x == File
+                   -> Just (entryPath . rootLabel $ x, n)
+                    | otherwise
+                   -> findLineNumber n $ subForest x
+
 data BottomRowHandlers
     = BottomRowHandlers
         { onRandomLine :: IO ()
@@ -51,6 +69,12 @@ main :: IO ()
 main = do
     (forest_by_name, total) <- fmap lines getContents >>= countLines
     let forest = sortForest (flip compare `on` entryLineCount) forest_by_name
+
+    forM_ [0..total+1] $ \n -> do
+        putStr $ show n ++ ": "
+        case findLineNumber n forest of
+            Nothing        -> putStrLn "Out of bounds"
+            Just (path, p) -> putStrLn $ path ++ ":" ++ show p
 
     -- Display the tree on the console
     --      putStr $ drawForest $ map (fmap show) forest
