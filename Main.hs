@@ -49,7 +49,8 @@ createBottomRow BottomRowHandlers{..} = do
 
 main :: IO ()
 main = do
-    (forest, total) <- fmap lines getContents >>= countLines
+    (forest_by_name, total) <- fmap lines getContents >>= countLines
+    let forest = sortForest (flip compare `on` entryLineCount) forest_by_name
 
     -- Display the tree on the console
     --      putStr $ drawForest $ map (fmap show) forest
@@ -71,7 +72,7 @@ main = do
     boxPackStart vbox label PackNatural 5
     containerAdd win vbox
 
-    model <- treeStoreNew $ sortForest (flip compare `on` entryLineCount) forest
+    model <- treeStoreNew forest
     view  <- treeViewNewWithModel model
 
     treeViewSetHeadersVisible view True
