@@ -34,11 +34,12 @@ executable recursive-line-count
         CountLines
 
     build-depends: base == 4.*
-                 , containers
-                 , gtk
-                 , process
-                 , mtl >= 2
-                 , filepath
                  , bytestring
+                 , containers
+                 , filepath
+                 , gtk
+                 , mtl >= 2
+                 , process
+                 , random
 
     ghc-options: -Wall -fwarn-tabs

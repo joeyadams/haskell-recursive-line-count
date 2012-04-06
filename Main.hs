@@ -11,6 +11,7 @@ import Graphics.UI.Gtk
     hiding (on, Entry)
 import System.IO            (hClose)
 import System.Process
+import System.Random        (randomRIO)
 
 import qualified Graphics.UI.Gtk as Gtk
 
@@ -145,14 +146,18 @@ main = do
 
     bottomRow <- createBottomRow BottomRowHandlers
         { onRandomLine = do
-            dialog <- messageDialogNew (Just win)
-                                       [DialogDestroyWithParent]
-                                       MessageError
-                                       ButtonsOk
-                                       "Not implemented yet"
-            _ <- dialogRun dialog
-            widgetDestroy dialog
-            return ()
+            n <- randomRIO (1, total)
+            case findLineNumber n forest of
+                Nothing -> do
+                    dialog <- messageDialogNew (Just win)
+                                               [DialogDestroyWithParent]
+                                               MessageError
+                                               ButtonsOk
+                                               "Line number out of range (bug)"
+                    _ <- dialogRun dialog
+                    widgetDestroy dialog
+                Just (path, line) ->
+                    editFile path (Just line)
         }
     boxPackStart vbox bottomRow PackNatural 0
 
