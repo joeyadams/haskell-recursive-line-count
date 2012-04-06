@@ -70,15 +70,16 @@ main = do
     (forest_by_name, total) <- fmap lines getContents >>= countLines
     let forest = sortForest (flip compare `on` entryLineCount) forest_by_name
 
-    forM_ [0..total+1] $ \n -> do
-        putStr $ show n ++ ": "
-        case findLineNumber n forest of
-            Nothing        -> putStrLn "Out of bounds"
-            Just (path, p) -> putStrLn $ path ++ ":" ++ show p
-
     -- Display the tree on the console
     --      putStr $ drawForest $ map (fmap show) forest
     --      putStrLn $ "Total line count: " ++ show total
+
+    -- Test code for making sure findLineNumber works correctly
+    --      forM_ [0..total+1] $ \n -> do
+    --          putStr $ show n ++ ": "
+    --          case findLineNumber n forest of
+    --              Nothing        -> putStrLn "Out of bounds"
+    --              Just (path, p) -> putStrLn $ path ++ ":" ++ show p
 
     -- The following is based on TreeDemo.hs in the
     -- Gtk2Hs source distribution.
