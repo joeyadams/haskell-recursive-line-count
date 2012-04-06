@@ -2,6 +2,7 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 import Control.Monad        (forM_)
 import CountLines
+import Data.Int             (Int64)
 import Data.List            (sortBy)
 import Data.Function        (on)
 import Data.Tree
@@ -12,10 +13,13 @@ import System.Process
 
 import qualified Graphics.UI.Gtk as Gtk
 
-editFile :: FilePath -> IO ()
-editFile path = do
+editFile :: FilePath -> Maybe Int64 -> IO ()
+editFile path lineno = do
+    let args = case lineno of
+                   Nothing -> []
+                   Just n  -> ['+' : show n]
     (Just stdin, Just stdout, Just stderr, _) <-
-        createProcess (proc "xdg-open" [path])
+        createProcess (proc "gvim" (path : args))
             { std_in  = CreatePipe
             , std_out = CreatePipe
             , std_err = CreatePipe
@@ -99,7 +103,7 @@ main = do
     Gtk.on view rowActivated $ \path _ -> do
         Entry{..} <- treeStoreGetValue model path
         if entryType == File
-            then editFile entryPath
+            then editFile entryPath Nothing
             else do
                 e <- treeViewRowExpanded view path
                 _ <- if e
