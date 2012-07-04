@@ -53,18 +53,25 @@ findLineNumber n forest
 
 data BottomRowHandlers
     = BottomRowHandlers
-        { onRandomLine :: IO ()
+        { onRandomLine :: Maybe (IO ())
         }
 
 createBottomRow :: BottomRowHandlers -> IO Alignment
 createBottomRow BottomRowHandlers{..} = do
     randomLineButton <- buttonNewWithLabel "Jump to random line"
-    onClicked randomLineButton onRandomLine
+    case onRandomLine of
+        Just h  -> onClicked randomLineButton h
+                >> return ()
+        Nothing -> widgetSetSensitive randomLineButton False
 
     align <- alignmentNew 0.5 0.0 0.0 0.0
     containerAdd align randomLineButton
 
     return align
+
+enableWhen :: Bool -> a -> Maybe a
+enableWhen False _ = Nothing
+enableWhen True  x = Just x
 
 main :: IO ()
 main = do
@@ -145,17 +152,11 @@ main = do
     boxPackStart vbox scroll PackGrow 0
 
     bottomRow <- createBottomRow BottomRowHandlers
-        { onRandomLine = do
+        { onRandomLine = enableWhen (total >= 1) $ do
             n <- randomRIO (1, total)
             case findLineNumber n forest of
-                Nothing -> do
-                    dialog <- messageDialogNew (Just win)
-                                               [DialogDestroyWithParent]
-                                               MessageError
-                                               ButtonsOk
-                                               "Line number out of range (bug)"
-                    _ <- dialogRun dialog
-                    widgetDestroy dialog
+                Nothing ->
+                    errorDialog win "Line number out of range (bug)"
                 Just (path, line) ->
                     editFile path (Just line)
         }
@@ -163,3 +164,13 @@ main = do
 
     widgetShowAll win
     mainGUI
+
+errorDialog :: Window -> String -> IO ()
+errorDialog win msg = do
+    dialog <- messageDialogNew (Just win)
+                               [DialogDestroyWithParent]
+                               MessageError
+                               ButtonsOk
+                               msg
+    _ <- dialogRun dialog
+    widgetDestroy dialog
